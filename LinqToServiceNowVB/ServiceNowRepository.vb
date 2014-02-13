@@ -121,6 +121,14 @@ Public Class ServiceNowRepository(Of TServiceNow_cmdb_ci_ As New, TGetRecords As
 
     End Sub
 
+    Private Function GetRecords(ByVal recs As Object()) As TGetRecordsResponseGetRecordsResult()
+        If _selectQuery IsNot Nothing Then
+            Return recs.Select(Function(o) _selectQuery(o)).ToArray()
+        Else
+            Return recs.Cast(Of TGetRecordsResponseGetRecordsResult).ToArray()
+        End If
+    End Function
+
     Private Function GetRecords() As TGetRecordsResponseGetRecordsResult()
 
         Dim t As Type = proxyUser.GetType()
@@ -142,11 +150,7 @@ Public Class ServiceNowRepository(Of TServiceNow_cmdb_ci_ As New, TGetRecords As
             Dim rslt As Object() = methodInfo.Invoke(proxyUser, {ranged._filter})
 
             Do Until rslt.Count = 0
-                If _selectQuery IsNot Nothing Then
-                    list.AddRange(rslt.Select(Function(o) _selectQuery(o)).ToArray())
-                Else
-                    list.AddRange(rslt)
-                End If
+                list.AddRange(GetRecords(rslt))
                 first += 250
                 ranged = Range(first, last)
                 rslt = methodInfo.Invoke(proxyUser, {ranged._filter})
@@ -154,13 +158,7 @@ Public Class ServiceNowRepository(Of TServiceNow_cmdb_ci_ As New, TGetRecords As
 
             Return list.ToArray()
         Else
-            If _selectQuery IsNot Nothing Then
-                Dim ret As Object() = methodInfo.Invoke(proxyUser, {_filter})
-                Return ret.Select(Function(o) _selectQuery(o)).ToArray()
-            Else
-                Dim ret As TGetRecordsResponseGetRecordsResult() = methodInfo.Invoke(proxyUser, {_filter})
-                Return ret.ToArray()
-            End If
+            Return GetRecords(methodInfo.Invoke(proxyUser, {_filter}))
         End If
 
     End Function
